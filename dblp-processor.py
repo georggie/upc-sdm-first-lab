@@ -1,3 +1,4 @@
+import re
 import lorem
 import pandas as pd
 from textblob import TextBlob
@@ -17,10 +18,29 @@ def extract_keywords_from_sentence(title):
     """
     Tries it's best to generate keywords from the title of a paper
     :param title: title of the paper
-    :return: array of keywords
+    :return: processed_string of keywords
     """
     blob = TextBlob(title)
     return blob.noun_phrases
+
+
+def extract_conference_details(raw_string):
+    """
+    Extracts conference details from the raw string
+    :param raw_string: with conference details like workshop/conference, venue, part of the year etc.
+    :return: string that represents coded information about conference
+    """
+    processed_string = [re.sub("$[\s.]", '', token) for token in raw_string.split(',')]
+    is_workshop = 'workshop' in raw_string.lower()
+    if len(processed_string) < 5:
+        return None
+    else:
+        if not processed_string[-2].strip().isdigit():
+            return None
+        if not re.search(".+-.+", processed_string[-3]):
+            return None
+        return f'{processed_string[0]}{processed_string[1]}|{processed_string[-5]}' \
+               f'|{processed_string[-4]}|{processed_string[-3]}|{processed_string[-2]}|{is_workshop}'
 
 
 def extract_file_header(path):
@@ -74,7 +94,8 @@ def extract_conference_papers(inproceedings_path, proceedings_path):
     try:
         print(f'Extracting conference papers from the {inproceedings_path}.csv ...')
         headers = extract_file_header(f'{inproceedings_path}_header')
-        df = pd.read_csv(inproceedings_path, names=headers, delimiter=';', nrows=30000, low_memory=False, error_bad_lines=False)
+        df = pd.read_csv(inproceedings_path, names=headers, delimiter=';', nrows=100000, low_memory=False,
+                         error_bad_lines=False)
         df = df[df.key.str.contains('conf')]
         df = df[['author', 'title', 'pages', 'key', 'ee', 'crossref', 'year']]
         df.dropna(subset=['key', 'title', 'year', 'author', 'crossref'], inplace=True)
@@ -87,6 +108,8 @@ def extract_conference_papers(inproceedings_path, proceedings_path):
                              'publisher', 'series', 'title_y', 'year_y']]
         final_df['abstract'] = final_df.apply(lambda _: lorem.paragraph(), axis=1)
         final_df['keywords'] = final_df.apply(lambda x: extract_keywords_from_sentence(x['title_x']), axis=1)
+        final_df['title_y'] = final_df.apply(lambda x: extract_conference_details(x['title_y']), axis=1)
+        final_df.dropna(subset=['title_y'], inplace=True)
 
         return final_df
     except IOError as io_error:
@@ -96,5 +119,5 @@ def extract_conference_papers(inproceedings_path, proceedings_path):
 # df_journals = extract_journal_papers("output_article")
 df_conferences = extract_conference_papers("output_inproceedings", "output_proceedings")
 
-# print(df_journals)
-print(df_conferences)
+df_conferences['title_y'].to_csv('test.csv')
+print(len(df_conferences))
