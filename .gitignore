@@ -27,6 +27,8 @@ output_*
 
 # idea ignore
 .idea
+./src/dumps
+target
 
 # venv ingore
 venv
