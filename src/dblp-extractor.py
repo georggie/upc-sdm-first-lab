@@ -7,6 +7,8 @@ pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
 
+SOURCE_PATH='./dumps'
+OUTPUT_PATH='./main/resources'
 
 # from articles get authors, journal -> extract volume and year and title and after merge with other journals
 # from inproceedings -> use key: conf/.... then use db/conf/nooj/nooj2018.html#BlancheteMMM18
@@ -21,7 +23,8 @@ def extract_keywords_from_sentence(title):
     :return: processed_string of keywords
     """
     blob = TextBlob(title)
-    return blob.noun_phrases
+    keywords = blob.noun_phrases
+    return '|'.join(keywords)
 
 
 def extract_conference_details(raw_string):
@@ -60,6 +63,20 @@ def extract_file_header(path):
         print("Input/Output Exception => ", io_error)
 
 
+def extract_coauthors(authors_raw):
+    """
+    Extract co-authors of a paper
+    :param authors_raw: string of authors
+    :return: co-authors of the paper
+    """
+    authors = authors_raw.split('|')
+    if len(authors) > 1:
+        authors.pop(0)
+        return '|'.join(authors)
+    else:
+        return None
+
+
 def extract_journal_papers(path):
     """
     Extracts papers that have been published in journals
@@ -79,6 +96,9 @@ def extract_journal_papers(path):
         # add abstract as lorem and infer keywords from the title
         df['abstract'] = df.apply(lambda _: lorem.paragraph(), axis=1)
         df['keywords'] = df.apply(lambda x: extract_keywords_from_sentence(x['title']), axis=1)
+        df['co-authors'] = df.apply(lambda x: extract_coauthors(x['author']), axis=1)
+        df['author'] = df.apply(lambda x: x['author'].split('|')[0], axis=1)
+
         return df.reset_index(drop=True)
     except IOError as io_error:
         print("Input/Output Exception => ", io_error)
@@ -116,8 +136,8 @@ def extract_conference_papers(inproceedings_path, proceedings_path):
         print("Input/Output Exception => ", io_error)
 
 
-# df_journals = extract_journal_papers("output_article")
-df_conferences = extract_conference_papers("output_inproceedings", "output_proceedings")
+df_journals = extract_journal_papers(f"{SOURCE_PATH}/output_article")
+df_conferences = extract_conference_papers(f"{SOURCE_PATH}/output_inproceedings", f"{SOURCE_PATH}/output_proceedings")
 
-df_conferences['title_y'].to_csv('test.csv')
-print(len(df_conferences))
+df_conferences.to_csv(f'{OUTPUT_PATH}/conferences.csv')
+df_journals.to_csv(f'{OUTPUT_PATH}/journals.csv')
