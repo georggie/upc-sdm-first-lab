@@ -10,11 +10,6 @@ pd.set_option('display.width', 1000)
 SOURCE_PATH='./dumps'
 OUTPUT_PATH='./main/resources'
 
-# from articles get authors, journal -> extract volume and year and title and after merge with other journals
-# from inproceedings -> use key: conf/.... then use db/conf/nooj/nooj2018.html#BlancheteMMM18
-# reduc it to db/conf/nooj/nooj2018.html and search that in output_proceedings for details
-# run python -m textblob.download_corpora
-
 
 def extract_keywords_from_sentence(title):
     """
@@ -86,7 +81,7 @@ def extract_journal_papers(path):
     try:
         print(f'Extracting journal papers from the {path}.csv ...')
         headers = extract_file_header(f'{path}_header')
-        df = pd.read_csv(path, names=headers, delimiter=';', nrows=20000, low_memory=False, error_bad_lines=False)
+        df = pd.read_csv(path, names=headers, delimiter=';', nrows=5000, low_memory=False, error_bad_lines=False)
         # take only journals - documentation: key is the unique key of the record. `conf/*` is used
         # for conference or workshop papers and `journals/*` is used for articles which are published in journals.
         df = df[df.key.str.contains('journals')]
@@ -96,8 +91,9 @@ def extract_journal_papers(path):
         # add abstract as lorem and infer keywords from the title
         df['abstract'] = df.apply(lambda _: lorem.paragraph(), axis=1)
         df['keywords'] = df.apply(lambda x: extract_keywords_from_sentence(x['title']), axis=1)
-        df['co-authors'] = df.apply(lambda x: extract_coauthors(x['author']), axis=1)
+        df['coauthors'] = df.apply(lambda x: extract_coauthors(x['author']), axis=1)
         df['author'] = df.apply(lambda x: x['author'].split('|')[0], axis=1)
+        df['title'] = df.apply(lambda x: re.sub('[\\|"]', '', x['title']), axis=1)
 
         return df.reset_index(drop=True)
     except IOError as io_error:
@@ -114,7 +110,7 @@ def extract_conference_papers(inproceedings_path, proceedings_path):
     try:
         print(f'Extracting conference papers from the {inproceedings_path}.csv ...')
         headers = extract_file_header(f'{inproceedings_path}_header')
-        df = pd.read_csv(inproceedings_path, names=headers, delimiter=';', nrows=100000, low_memory=False,
+        df = pd.read_csv(inproceedings_path, names=headers, delimiter=';', nrows=20000, low_memory=False,
                          error_bad_lines=False)
         df = df[df.key.str.contains('conf')]
         df = df[['author', 'title', 'pages', 'key', 'ee', 'crossref', 'year']]
