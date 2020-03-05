@@ -1,0 +1,26 @@
+LOAD CSV WITH HEADERS FROM 'file:///conferences.csv' AS row
+MERGE (paper:Paper {id: row.key_x, title: row.title_x, abstract: row.abstract, pages: coalesce(row.pages_x, 38-40), url: row.ee_x})
+MERGE (author:Author {name: row.author_x})
+MERGE (author)-[:IS_LEAD_AUTHOR]->(paper)
+WITH row, author, paper
+WHERE row.coauthors IS NOT NULL
+UNWIND split(row.coauthors, '|') AS co_author
+MERGE (coauthor:Author {name: co_author})
+MERGE (paper)<-[:WRITES]-(coauthor)
+WITH row, paper
+UNWIND split(row.keywords, '|') AS keywrd
+MERGE (keyword:Keyword {name: keywrd})
+MERGE (paper)-[:MENTIONES]->(keyword)
+WITH row, paper
+MERGE (proceeding:Proceeding {id: row.key_y, isbn: row.isbn, url: coalesce(row.ee_y, 'unknown'), published: row.publisher, series: coalesce(row.series, 'unknown')})
+MERGE (paper)-[:IS_IN]->(proceeding)
+WITH SPLIT(row.title_y, "|") AS words, proceeding
+WHERE words[5] = 'False'
+MERGE (conf:Conference{name: words[0]})<-[:OF_A]-(proceeding)
+MERGE (conf)-[:HAS]->(edition:Edition {place: words[1], country: words[2], period: words[3]})
+MERGE (edition)-[:HAPPENED]-(date: Date {year: words[4]})
+WITH words, proceeding
+WHERE words[5] = 'True'
+MERGE (work:Workshop{name: words[0]})<-[:OF_A]-(proceeding)
+MERGE (work)-[:HAS]->(edition:Edition {place: words[1], country: words[2], period: words[3]})
+MERGE (edition)-[:HAPPENED]-(date: Date {year: words[4]})

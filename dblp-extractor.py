@@ -7,8 +7,8 @@ pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
 
-SOURCE_PATH='./dumps'
-OUTPUT_PATH='./main/resources'
+SOURCE_PATH ='resources'
+OUTPUT_PATH ='resources'
 
 
 def extract_keywords_from_sentence(title):
@@ -81,7 +81,7 @@ def extract_journal_papers(path):
     try:
         print(f'Extracting journal papers from the {path}.csv ...')
         headers = extract_file_header(f'{path}_header')
-        df = pd.read_csv(path, names=headers, delimiter=';', nrows=5000, low_memory=False, error_bad_lines=False)
+        df = pd.read_csv(path, names=headers, delimiter=';', nrows=1000, low_memory=False, error_bad_lines=False)
         # take only journals - documentation: key is the unique key of the record. `conf/*` is used
         # for conference or workshop papers and `journals/*` is used for articles which are published in journals.
         df = df[df.key.str.contains('journals')]
@@ -110,21 +110,23 @@ def extract_conference_papers(inproceedings_path, proceedings_path):
     try:
         print(f'Extracting conference papers from the {inproceedings_path}.csv ...')
         headers = extract_file_header(f'{inproceedings_path}_header')
-        df = pd.read_csv(inproceedings_path, names=headers, delimiter=';', nrows=20000, low_memory=False,
+        df = pd.read_csv(inproceedings_path, names=headers, delimiter=';', nrows=1000, low_memory=False,
                          error_bad_lines=False)
         df = df[df.key.str.contains('conf')]
         df = df[['author', 'title', 'pages', 'key', 'ee', 'crossref', 'year']]
-        df.dropna(subset=['key', 'title', 'year', 'author', 'crossref'], inplace=True)
+        df.dropna(subset=['key', 'title', 'author', 'crossref'], inplace=True)
 
         headers_conf = extract_file_header(f'{proceedings_path}_header')
         conf = pd.read_csv(proceedings_path, names=headers_conf, delimiter=';', error_bad_lines=False, low_memory=False)
 
         final_df = pd.merge(df, conf, left_on='crossref', right_on='key', how='inner')
         final_df = final_df[['author_x', 'title_x', 'pages_x', 'key_x', 'ee_x', 'editor', 'ee_y', 'isbn', 'key_y',
-                             'publisher', 'series', 'title_y', 'year_y']]
+                             'publisher', 'series', 'title_y']]
         final_df['abstract'] = final_df.apply(lambda _: lorem.paragraph(), axis=1)
         final_df['keywords'] = final_df.apply(lambda x: extract_keywords_from_sentence(x['title_x']), axis=1)
         final_df['title_y'] = final_df.apply(lambda x: extract_conference_details(x['title_y']), axis=1)
+        final_df['coauthors'] = final_df.apply(lambda x: extract_coauthors(x['author_x']), axis=1)
+        final_df['author_x'] = final_df.apply(lambda x: x['author_x'].split('|')[0], axis=1)
         final_df.dropna(subset=['title_y'], inplace=True)
 
         return final_df
