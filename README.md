@@ -1,26 +1,39 @@
 # Semantic Data Management - Labaratory Session 1
 
+## Dependencies
+
+Necessary dependencies for this project are:
+
+```.python
+lorem==0.1.1
+neo4j==1.7.6
+neobolt==1.7.16
+neotime==1.7.4
+nltk==3.4.5
+numpy==1.18.1
+pandas==1.0.1
+python-dateutil==2.8.1
+python-dotenv==0.12.0
+pytz==2019.3
+six==1.14.0
+textblob==0.15.3
+```
+
+To install them execute:
+
+```
+$ pip3 install -r dependencies.txt
+```
+
+where `dependencies.txt` is file that contains dependencies from
+above.
+
 ## Part A - Modeling, Loading, Evolving
 
 ### A.2 Instantiating/Loading
 
 In order to instantiate/load the graph you first need to
-run `python` script called `dblp-extractor.py`. But before
-running the script it is advised to first create virtual 
-environment using command:
-
-```
-$ virtualenv venv
-```
-
-Inside `src` directory there is a file called `dependencies.txt`
-that shows python dependencies for this project that need
-to be satisfied. Execute:
-
-```
-$ source venv/bin/activate
-$ pip3 install -r src/dependencies.txt
-```
+run `python` script called `extract.py`. 
 
 Extract XML file from the [DBLP](https://dblp.uni-trier.de/) using
 [this](https://github.com/ThomHurks/dblp-to-csv) repository. 
