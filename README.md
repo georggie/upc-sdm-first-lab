@@ -32,7 +32,7 @@ mentioned above.
 
 ### A.2 Instantiating/Loading
 
-Firstly, extract `XML` file from the [DBLP](https://dblp.uni-trier.de/) using
+Extract `XML` file from the [DBLP](https://dblp.uni-trier.de/) using
 [this](https://github.com/ThomHurks/dblp-to-csv) repository. 
 Create a folder with the name of the value of an entry `DBLP_SOURCE` (look at
 `.env.example` file, default is `resources`). Move all files
