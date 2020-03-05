@@ -14,7 +14,6 @@ class DblpExtracor(object):
         """
         # pick up configuration parameters
         self._SOURCE_PATH = os.getenv('DBLP_SOURCE')
-        self._OUTPUT_PATH = os.getenv('DBLP_OUTPUT')
         self._JOURNALS_NROWS = os.getenv('JOURNALS_NROWS')
         self._CONFERENCES_NROWS = os.getenv('CONFERENCES_NROWS')
 
@@ -100,7 +99,7 @@ class DblpExtracor(object):
             df['author'] = df.apply(lambda x: x['author'].split('|')[0], axis=1)
             df['title'] = df.apply(lambda x: re.sub('[\\|"]', '', x['title']), axis=1)
 
-            df.to_csv(f'{self._OUTPUT_PATH}/journals.csv')
+            df.to_csv(f'{self._SOURCE_PATH}/journals.csv')
         except IOError as io_error:
             print("Input/Output Exception => ", io_error)
 
@@ -140,6 +139,6 @@ class DblpExtracor(object):
             final_df['author_x'] = final_df.apply(lambda x: x['author_x'].split('|')[0], axis=1)
             final_df.dropna(subset=['title_y'], inplace=True)
 
-            final_df.to_csv(f'{self._OUTPUT_PATH}/conferences.csv')
+            final_df.to_csv(f'{self._SOURCE_PATH}/conferences.csv')
         except IOError as io_error:
             print("Input/Output Exception => ", io_error)

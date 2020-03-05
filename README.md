@@ -1,4 +1,4 @@
-# Semantic Data Management - Labaratory Session 1
+# Semantic Data Management - Laboratory Session 1
 
 ## Dependencies
 
@@ -25,31 +25,28 @@ To install them execute:
 $ pip3 install -r dependencies.txt
 ```
 
-where `dependencies.txt` is file that contains dependencies from
-above.
+where `dependencies.txt` is a file that contains dependencies 
+mentioned above.
 
 ## Part A - Modeling, Loading, Evolving
 
 ### A.2 Instantiating/Loading
 
-In order to instantiate/load the graph you first need to
-run `python` script called `extract.py`. 
-
-Extract XML file from the [DBLP](https://dblp.uni-trier.de/) using
+Firstly, extract `XML` file from the [DBLP](https://dblp.uni-trier.de/) using
 [this](https://github.com/ThomHurks/dblp-to-csv) repository. 
-Create folder `dumps` inside the src directory and put there the 
-output of parsing (you can name folder however you want but then you need
-to fix `SOURCE_PATH` in python script). 
+Create the folder with the name of the value `DBLP_SOURCE` (look at
+`.env.example` file, default is `resources`). Move all files
+that are the result of parsing into that directory. After that
+run `extract.py` script (you will need to provide names of three files there). 
+The result are two files (`journals.csv` & `conferences.csv`) 
+that are placed in the same directory mentioned above.
 
-Position to the `src` directory and execute:
+**Note**: Before going to the loading part move
+those two files to `/var/lib/neo4j/import` directory.
 
-```
-$ python3 dblp-extractor.py
-```
-
-The output will be inside `src/main/resources`. You can 
-control the path of the input and output files using the
-global variables from the `dblp-extractor.py` file.
+In order to instantiate/load the graph you need to
+run `python` script called `load.py`. After this step
+graph should be loaded.
 
 
 
