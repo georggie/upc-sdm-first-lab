@@ -34,17 +34,17 @@ mentioned above.
 
 Firstly, extract `XML` file from the [DBLP](https://dblp.uni-trier.de/) using
 [this](https://github.com/ThomHurks/dblp-to-csv) repository. 
-Create the folder with the name of the value `DBLP_SOURCE` (look at
+Create a folder with the name of the value of an entry `DBLP_SOURCE` (look at
 `.env.example` file, default is `resources`). Move all files
 that are the result of parsing into that directory. After that
 run `extract.py` script (you will need to provide names of three files there). 
-The result are two files (`journals.csv` & `conferences.csv`) 
+The result is two files (`journals.csv` & `conferences.csv`) 
 that are placed in the same directory mentioned above.
 
 **Note**: Before going to the loading part move
-those two files to `/var/lib/neo4j/import` directory.
+those two files to `/var/lib/neo4j/import` directory (for Linux).
 
-In order to instantiate/load the graph you need to
+In order to instantiate/load a graph you need to
 run `python` script called `load.py`. After this step
 graph should be loaded.
 
