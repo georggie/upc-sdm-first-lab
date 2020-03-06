@@ -1,5 +1,7 @@
 import os
 import re
+from os import replace
+
 import lorem
 import settings
 import pandas as pd
@@ -84,20 +86,21 @@ class DblpExtracor(object):
             path = f'{self._SOURCE_PATH}/{path}'
             print(f'Extracting journal papers from the {path}.csv ...')
             headers = self._extract_file_header(f'{path}_header')
-            df = pd.read_csv(path, names=headers, delimiter=';', nrows=int(self._JOURNALS_NROWS), low_memory=False,
+            df = pd.read_csv(path, names=headers, delimiter=';', nrows=20000, low_memory=False,
                              error_bad_lines=False)
             # take only journals - documentation: key is the unique key of the record. `conf/*` is used
             # for conference or workshop papers and `journals/*` is used for articles which are published in journals.
             df = df[df.key.str.contains('journals')]
             df = df[['author', 'title', 'pages', 'key', 'ee', 'journal', 'volume', 'year']]
             # if some of these fields is empty drop that row
-            df.dropna(subset=['key', 'title', 'journal', 'year', 'volume', 'author'], inplace=True)
+            df.dropna(subset=['key', 'title', 'journal', 'year', 'volume', 'author', 'ee'], inplace=True)
             # add abstract as lorem and infer keywords from the title
             df['abstract'] = df.apply(lambda _: lorem.paragraph(), axis=1)
             df['keywords'] = df.apply(lambda x: self._extract_keywords_from_sentence(x['title']), axis=1)
             df['coauthors'] = df.apply(lambda x: self._extract_coauthors(x['author']), axis=1)
             df['author'] = df.apply(lambda x: x['author'].split('|')[0], axis=1)
             df['title'] = df.apply(lambda x: re.sub('[\\|"]', '', x['title']), axis=1)
+            df = df.sample(n=int(self._JOURNALS_NROWS))
 
             df.to_csv(f'{self._SOURCE_PATH}/journals.csv')
         except IOError as io_error:
@@ -116,8 +119,7 @@ class DblpExtracor(object):
             print(f'Extracting conference papers from the {inproceedings_path}.csv ...')
             headers = self._extract_file_header(f'{inproceedings_path}_header')
             df = pd.read_csv(inproceedings_path, names=headers, delimiter=';', nrows=int(self._CONFERENCES_NROWS),
-                             low_memory=False,
-                             error_bad_lines=False)
+                             low_memory=False, error_bad_lines=False)
             df = df.sample(frac=1).reset_index(drop=True)
             df = df[df.key.str.contains('conf')]
             df = df[['author', 'title', 'pages', 'key', 'ee', 'crossref', 'year']]

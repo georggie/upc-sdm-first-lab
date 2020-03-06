@@ -81,12 +81,12 @@ class Neo4JLoader(object):
                 MERGE (proceeding:Proceeding {id: row.key_y, isbn: coalesce(row.isbn, 'Unknown'), url: coalesce(row.ee_y, 'Unknown'), 
                        published: row.publisher, series: coalesce(row.series, 'Unknown')})
                 MERGE (paper)-[:IS_IN]->(proceeding)
-                WITH SPLIT(row.title_y, "|") AS words, proceeding
+                WITH row, SPLIT(row.title_y, "|") AS words, proceeding
                 WHERE words[5] = 'False'
                 MERGE (conf:Conference{name: words[0]})<-[:OF_A]-(proceeding)
                 MERGE (conf)-[:HAS]->(edition:Edition {place: words[1], country: words[2], period: words[3]})
                 MERGE (edition)-[:HAPPENED]-(date: Date {year: words[4]})
-                WITH words, proceeding
+                WITH SPLIT(row.title_y, "|") AS words, proceeding
                 WHERE words[5] = 'True'
                 MERGE (work:Workshop{name: words[0]})<-[:OF_A]-(proceeding)
                 MERGE (work)-[:HAS]->(edition:Edition {place: words[1], country: words[2], period: words[3]})
