@@ -20,6 +20,7 @@ class Neo4JLoader(object):
         self._load_journals()
         self._load_conferences_and_workshops()
         self._generate_random_citations()
+        self._generate_random_reviewers()
 
     def _load_journals(self):
         """
@@ -48,9 +49,8 @@ class Neo4JLoader(object):
                 MERGE (journal:Journal {name: row.journal})
                 MERGE (paper)-[:PUBLISHED_IN]->(journal)
                 WITH row, journal
-                MERGE (volume:Volume {number: row.volume})
-                MERGE (date:Year {year: row.year})
-                MERGE (journal)-[:BELONGS_TO]->(volume)-[:ISSUED]->(date)
+                MERGE (date:Year {year: row.year})<-[:ISSUED]-(volume:Volume {number: row.volume})
+                MERGE (journal)-[:BELONGS_TO]->(volume)
             """)
         except Exception as exception:
             print("Exception => ", exception)
@@ -132,6 +132,25 @@ class Neo4JLoader(object):
             WITH scp1, scp2
             WHERE rand() < 0.1 AND scp1 <> scp2
             MERGE (scp1)-[:CITES]->(scp2)
+        """)
+
+    def _generate_random_reviewers(self):
+        """
+        Generate `random` reviewers for papers
+        :return: void
+        """
+        print('Generating random reviewers for papers ...')
+        session = self._driver.session()
+
+        session.run("""
+            MATCH (scientificPaper:ScientificPaper)-[:MENTIONES]->(keyword:Keyword),
+            (author:Author)-[:IS_LEAD_AUTHOR]->(:ScientificPaper)-[:MENTIONES]->(keyword)
+            WHERE NOT EXISTS ((author)--(scientificPaper))
+            WITH scientificPaper, author, rand() as randomNumber
+            ORDER BY randomNumber
+            WITH scientificPaper, collect(DISTINCT author)[0..3] as reviewers
+            UNWIND(reviewers) as reviewer
+            MERGE (scientificPaper)<-[:REVIEWS]-(reviewer)
         """)
 
 

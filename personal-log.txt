@@ -1,0 +1,27 @@
+// possible solution for h-index
+MATCH (author:Author {name: 'Samir Mbarki'})-[:IS_LEAD_AUTHOR|:IS_CO_AUTHOR]->(scientificPaper:ScientificPaper)<-[:CITES] -(citatingPaper:ScientificPaper)
+WITH author, scientificPaper, count(citatingPaper) as numberOfCitations
+ORDER BY numberOfCitations DESC
+WITH author, collect(numberOfCitations) as orderedCitations
+UNWIND range(0, size(orderedCitations)-1) as arrayIndex
+WITH author, arrayIndex as key, orderedCitations[arrayIndex] as value
+WHERE key > value
+RETURN author, key - 1 as hIndex
+LIMIT 1
+
+// second query
+MATCH (scientificPaper:ScientificPaper)-[:IS_IN]->(:Proceeding)-[:OF_A]->(conference:Conference),
+(scientificPaper)<-[:CITES]-(citingPaper:ScientificPaper)
+WITH conference, scientificPaper, count(citingPaper) AS numberOfCitations
+ORDER BY conference, numberOfCitations DESC
+WITH conference, collect(scientificPaper) as allPapers, collect(numberOfCitations) as allCitations
+WITH conference, allPapers[0..3] as a, allCitations[0..3] as b
+UNWIND(range(0, 2)) as indexKey
+RETURN conference, a[indexKey], b[indexKey]
+
+//third query
+MATCH (author:Author)--(scientificPaper:ScientificPaper)-[:IS_IN]->(:Proceeding)-[:OF_A]->(conference:Conference),(conference)-[:HAS]->(edition:Edition)
+WITH author, conference, count(edition) as appearance
+ORDER BY appearance DESC
+WHERE appearance > 4
+RETURN author, conference, appearance

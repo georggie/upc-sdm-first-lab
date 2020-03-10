@@ -1,7 +1,5 @@
 import os
 import re
-from os import replace
-
 import lorem
 import settings
 import pandas as pd
@@ -93,7 +91,7 @@ class DblpExtracor(object):
             df = df[df.key.str.contains('journals')]
             df = df[['author', 'title', 'pages', 'key', 'ee', 'journal', 'volume', 'year']]
             # if some of these fields is empty drop that row
-            df.dropna(subset=['key', 'title', 'journal', 'year', 'volume', 'author', 'ee'], inplace=True)
+            df.dropna(subset=['key', 'title', 'journal', 'year', 'volume', 'author', 'ee', 'pages'], inplace=True)
             # add abstract as lorem and infer keywords from the title
             df['abstract'] = df.apply(lambda _: lorem.paragraph(), axis=1)
             df['keywords'] = df.apply(lambda x: self._extract_keywords_from_sentence(x['title']), axis=1)
