@@ -1,4 +1,6 @@
 import os
+from contextlib import redirect_stderr
+
 import settings
 from neo4j import GraphDatabase
 
@@ -153,4 +155,47 @@ class Neo4JLoader(object):
             MERGE (scientificPaper)<-[:REVIEWS]-(reviewer)
         """)
 
+    def evolve(self):
+        """
+
+        :return:
+        """
+        print('Evolving the graph ...')
+
+        session = self._driver.session()
+
+        session.run("""
+            LOAD CSV WITH HEADERS FROM 'file:///reviews.csv' AS row
+            WITH row
+            MATCH (author:Author {name: row.author})-[rev:REVIEWS]->(scientificPaper:ScientificPaper {title: row.paper})
+            SET rev += {comment: row.comment, decision: row.decision, affiliation: row.affiliation, organization: row.organization}
+            WITH author, rev, scientificPaper
+            MATCH (author:Author)-[rev:REVIEWS]->(scientificPaper:ScientificPaper)-[:IS_IN|:PUBLISHED_IN]->(genericNode)
+            MERGE (revn:REVIEW {comment: rev.comment, decision: rev.decision})
+            MERGE (author)-[:DOES]->(revn)
+            MERGE (revn)-[:ON]->(scientificPaper)
+            MERGE (revn)-[:FOR]->(genericNode)
+            MERGE (:Organization {name: rev.affiliation})<-[:AFFILIATION {type: rev.organization}]-(author)
+            DELETE rev
+        """)
+
+    def evolver_helper(self):
+        """
+        Helper function used in graph evolving
+        :return: list of lists
+        """
+        data = []
+        session = self._driver.session()
+
+        results = session.run("""
+            MATCH (author:Author)-[rev:REVIEWS]->(scientificPaper:ScientificPaper)
+            RETURN author, scientificPaper
+        """)
+
+        for item in results:
+            value = dict(item['author'])['name']
+            key = dict(item['scientificPaper'])['title']
+            data.append([value, key])
+
+        return data
 

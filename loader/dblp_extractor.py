@@ -2,8 +2,13 @@ import os
 import re
 import lorem
 import settings
+import numpy as np
 import pandas as pd
+from faker import Faker
+from pandas import DataFrame
 from textblob import TextBlob
+from database import neo4j_loader
+from database.neo4j_loader import Neo4JLoader
 
 
 class DblpExtracor(object):
@@ -142,3 +147,30 @@ class DblpExtracor(object):
             final_df.to_csv(f'{self._SOURCE_PATH}/conferences.csv')
         except IOError as io_error:
             print("Input/Output Exception => ", io_error)
+
+    def genrate_random_reviews_(self):
+        """
+        Generate random reviews with comments and decisions
+        :return: void
+        """
+        neo4j = Neo4JLoader()
+        author_paper_pair = neo4j.evolver_helper()
+
+        faker = Faker()
+        universities = pd.read_csv('resources/universities', names=['Short', 'OName', 'URL'])
+
+        for i in range(0, len(author_paper_pair)):
+            choice = np.random.choice(['Company', 'University'], p=[0.3, 0.7])
+
+            if choice == 'Company':
+                picked = faker.company()
+            if choice == 'University':
+                picked = list(universities.sample(1)['OName'])[0]
+
+            author_paper_pair[i].append(lorem.paragraph()),
+            author_paper_pair[i].append(np.random.choice([True, False], p=[0.7, 0.3]))
+            author_paper_pair[i].append(picked)
+            author_paper_pair[i].append(choice)
+
+        df = pd.DataFrame(author_paper_pair, columns=['author', 'paper', 'comment', 'decision', 'affiliation', 'organization'])
+        df.to_csv(f'{self._SOURCE_PATH}/reviews.csv')

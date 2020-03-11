@@ -25,3 +25,10 @@ WITH author, conference, count(edition) as appearance
 ORDER BY appearance DESC
 WHERE appearance > 4
 RETURN author, conference, appearance
+
+
+LOAD CSV WITH HEADERS FROM 'file:///reviews.csv' AS row
+WITH row
+MATCH (author:Author {name: row.author})-[rev:REVIEWS]->(scientificPaper:ScientificPaper {key: row.paper})
+SET rev += {comment: row.comment, decision: row.decision, affiliation: row.affiliation, organization: row.organization}
+WITH author, rev, scientificPaper
