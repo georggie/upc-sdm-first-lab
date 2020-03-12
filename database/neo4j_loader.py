@@ -1,6 +1,4 @@
 import os
-from contextlib import redirect_stderr
-
 import settings
 from neo4j import GraphDatabase
 

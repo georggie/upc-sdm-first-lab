@@ -109,19 +109,67 @@ but this does not cause much concern.
 Extract `XML` file from the [DBLP](https://dblp.uni-trier.de/) using
 [this](https://github.com/ThomHurks/dblp-to-csv) repository. 
 Create a folder with the name of the value of an entry `DBLP_SOURCE` (look at
-`.env.example` file, default is `resources`). Move all files
-that are the result of parsing into that directory. After that
-run `extract.py` script (you will need to provide names of three files there). 
-The result is two files (`journals.csv` & `conferences.csv`) 
+`.env.example` file, default is `resources`) inside the project directory. 
+Move all files that are the result of parsing into that directory. After that
+run `extract.py` script (you will need to provide names of three files 
+there, be careful to mention .csv extension if you generated files with 
+extension). The result is three files (`journals.csv`, `conferences.csv` and `reviews.csv`) 
 that are placed in the same directory mentioned above.
 
 **Note**: Before going to the loading part move
-those two files to `/var/lib/neo4j/import` directory (for Linux).
+those three files to `/var/lib/neo4j/import` directory (for Linux).
 
 In order to instantiate/load a graph you need to
 run `python` script called `load.py`. After this step
-graph should be loaded.
+graph should be loaded. **Note**: For the first part leave `neo4j.evolve()`
+in `load.py` commented. You will need it in the evolving part.
 
-A.3 Evolving the graph
+**Extracting journal papers**:
+
+For extracting journal papers we used `output article` csv file. 
+From this file we are deriving the new csv file with header: `author`, `title`, `pages`, 
+`key`, `ee`, `journal`, `volume`, `year`.
+
+We are parsing the initial file line by line and when we encounter `journal/*`
+in a `key` attribute then we know that that row corresponds to the
+article that is published in journal. Rest of the attributes is trivially
+extracted. Additionally, we needed to add some extra attributes in order
+to completely align with task requirements, 
+in this regard we tried to be minimalistic and we avoided randomizing 
+the data except when that was unavoidable.
+
+So, in post-processing step, we are making a distinction between lead author and co-authors. 
+Then using `textblob` library we derived the keywords based on the paper's title.
+Using `lorem` library we generated random text for paper's abstract.
+
+Finally, we are doing post data cleaning to make sure that all
+data is consistent.
+
+**Extracting conference papers**:
+
+For extracting confernece paper we used two files: `output_inproceeings` 
+and `output_proceedings`. The key part of extracting is joining
+those two files based on the `crossref` attribute. After joining, we
+basically have extended information about every paper like conference or
+workshop where it was published, information about inproceeding,
+authors, edition of a conference, city, country, part of the year etc.
+
+After this step we are applying post-processing steps similar to ones
+we already explained above.
+
+**Generating reviews**:
+
+For every pair `Author` REVIEWS `ScientificPaper` we are generating
+random comment, final decision and additional information about author
+like university or company where he/she works in order to evolve our graph.
+
+### A.3 Evolving the graph
+
+In order to evolve graph uncomment the line `neo4j.evolve()` inside `load.py`.
+In this part we are using `reviews.csv` generated in the previous step.
 
 ![graph-model-evolved](https://i.imgur.com/zNNiYpy.png)
+
+We destroyed `Author` REVIEWS `ScientificPaper` relationship and
+evolved it to `Author` DOES `Review` ON `ScientificPaper` FOR `Journal`
+| `Inproceeding` of a conference or workshop.

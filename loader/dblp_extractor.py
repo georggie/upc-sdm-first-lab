@@ -5,9 +5,7 @@ import settings
 import numpy as np
 import pandas as pd
 from faker import Faker
-from pandas import DataFrame
 from textblob import TextBlob
-from database import neo4j_loader
 from database.neo4j_loader import Neo4JLoader
 
 
