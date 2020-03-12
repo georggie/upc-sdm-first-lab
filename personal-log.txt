@@ -32,3 +32,10 @@ WITH row
 MATCH (author:Author {name: row.author})-[rev:REVIEWS]->(scientificPaper:ScientificPaper {key: row.paper})
 SET rev += {comment: row.comment, decision: row.decision, affiliation: row.affiliation, organization: row.organization}
 WITH author, rev, scientificPaper
+
+// query 4
+MATCH (scientificPaper:ScientificPaper)-[:PUBLISHED_IN]->(journal:Journal)-[:BELONGS_TO]->(:Volume)-[:ISSUED]->(year:Year), (scientificPaper)<-[:CITES]-(citingPaper:ScientificPaper)
+WHERE year.year = "2018.0" OR year.year = "2019.0"
+WITH scientificPaper, journal, COUNT(citingPaper) as citations
+WITH count(scientificPaper) as totalPublications, journal, sum(citations) as totalCitations
+RETURN journal, toFloat(totalCitations / totalPublications)

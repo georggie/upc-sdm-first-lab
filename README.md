@@ -1,5 +1,9 @@
 # Semantic Data Management - Laboratory Session 1
 
+This project is the solution of the first laboratory session 
+in the subject [Semantic Data Management](https://learnsql2.fib.upc.edu/moodle/) 
+([UPC Universitat Politècnica de Catalunya](https://www.upc.edu/en))  
+
 ## Dependencies
 
 Necessary dependencies for this project are:
@@ -37,9 +41,53 @@ mentioned above.
 
 ## Part A - Modeling, Loading, Evolving
 
+This exercise is about modeling graph data for a certain domain. The main goal is to develop
+your skills on modeling and instantiating graph data.
+
 ### A.1 Modeling 
 
+The picture below represents the proposed solution for the domain 
+in the task. Two main criteria for deriving such a model are
+the optimization of queries in part B, and correct domain semantic modeling. 
+
 ![graph-model](https://i.imgur.com/MsvJhtT.png)
+
+> A paper can be written by many authors, however only one of them acts as corresponding
+author...When a paper is submitted to a conference or a journal, the conference chair or the journal editor assigns a set
+of reviewers (typically three) to each paper. Reviewers are scientists and therefore they are
+relevant authors (i.e., published many papers in relevant conferences or journals).
+
+From these requirements we derived three relationships between `Author`(s) and `ScientificPaper`(s):
+
+* `Author` IS LEAD AUTHOR of a `ScientificPaper`
+* `Author` IS CO-AUTHOR of a `ScientificPaper`
+* `Author` REVIEWS other `ScientificPaper` (in this phase you can track for 
+whom they did review by further following edges from scientific paper to 
+either journal or proceeding of a conference or a workshop)
+
+> A paper can be cited by another paper (meaning their content is related). A paper relates to one or more topics through the concept of keywords. Keywords are used by
+readers to quickly identify the main topics discussed in the paper. 
+
+So, a scientific paper is related to another paper by means of citations. 
+This is a perfect candidate for a recursive relationship. 
+In addition, the paper mentions certain keywords that we extracted as 
+a separate vertex because of reusability (many other papers will mention 
+the same keyword) and readability (semantic). 
+
+* `ScientificPaper` CITES other `ScientificPaper`
+* `ScientificPaper` MENTIONS some `Keyword`
+
+> In this domain, authors write research articles that can be published as scientific papers (papers for short) in the proceedings of a conference/workshop (a conference is a well-established forum while a workshop
+is typically associated to new trends still being explored), or in a journal. A proceeding is
+a published record which includes all the papers presented in the conference/workshop. A
+conference/workshop is organized in terms of editions. Each edition of a conference is held
+in a given city (venue) at a specific period of time of a given year. Oppositely, journals do
+not hold joint meeting events and, like a magazine, a journal publishes accepted papers in
+terms of volumes. There can be various volumes of a journal per year.
+
+
+
+
 
 ### A.2 Instantiating/Loading
 
