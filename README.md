@@ -5,18 +5,25 @@
 Necessary dependencies for this project are:
 
 ```.python
-lorem==0.1.1
-neo4j==1.7.6
-neobolt==1.7.16
-neotime==1.7.4
-nltk==3.4.5
-numpy==1.18.1
-pandas==1.0.1
-python-dateutil==2.8.1
-python-dotenv==0.12.0
-pytz==2019.3
-six==1.14.0
-textblob==0.15.3
+Package         Version
+--------------- -------
+Faker           4.0.1  
+lorem           0.1.1  
+neo4j           1.7.6  
+neobolt         1.7.16 
+neotime         1.7.4  
+nltk            3.4.5  
+numpy           1.18.1 
+pandas          1.0.1  
+pip             20.0.2 
+python-dateutil 2.8.1  
+python-dotenv   0.12.0 
+pytz            2019.3 
+setuptools      45.2.0 
+six             1.14.0 
+text-unidecode  1.3    
+textblob        0.15.3 
+wheel           0.34.2
 ```
 
 To install them execute:
@@ -29,6 +36,10 @@ where `dependencies.txt` is a file that contains dependencies
 mentioned above.
 
 ## Part A - Modeling, Loading, Evolving
+
+### A.1 Modeling 
+
+![graph-model](https://i.imgur.com/MsvJhtT.png)
 
 ### A.2 Instantiating/Loading
 
@@ -48,5 +59,6 @@ In order to instantiate/load a graph you need to
 run `python` script called `load.py`. After this step
 graph should be loaded.
 
+A.3 Evolving the graph
 
-
+![graph-model-evolved](https://i.imgur.com/zNNiYpy.png)

@@ -153,6 +153,8 @@ class DblpExtracor(object):
         Generate random reviews with comments and decisions
         :return: void
         """
+        print("Generating random reviews information ... ")
+
         neo4j = Neo4JLoader()
         author_paper_pair = neo4j.evolver_helper()
 
