@@ -173,3 +173,57 @@ In this part we are using `reviews.csv` generated in the previous step.
 We destroyed `Author` REVIEWS `ScientificPaper` relationship and
 evolved it to `Author` DOES `Review` ON `ScientificPaper` FOR `Journal`
 | `Inproceeding` of a conference or workshop.
+
+## Part B - Querying
+
+Find the h-indexes of the authors in your graph (see https://en.wikipedia.org/
+wiki/H-index, for a definition of the h-index metric):
+
+```
+MATCH (author:Author)-[:IS_LEAD_AUTHOR|:IS_CO_AUTHOR]->(scientificPaper:ScientificPaper)<-[:CITES]-(citatingPaper:ScientificPaper)
+WITH author, scientificPaper, count(citatingPaper) as numberOfCitations
+ORDER BY author, numberOfCitations DESC
+WITH author, collect(numberOfCitations) as orderedCitations
+UNWIND range(0, size(orderedCitations)-1) as arrayIndex
+WITH author, arrayIndex as key, orderedCitations[arrayIndex] as value
+WITH
+CASE
+WHEN key > value THEN key-1
+ELSE value END AS result, author
+RETURN author, min(result)
+```
+
+Find the top 3 most cited papers of each conference.
+
+````
+MATCH (scientificPaper:ScientificPaper)-[:IS_IN]->(:Proceeding)-[:OF_A]->(conference:Conference),
+(scientificPaper)<-[:CITES]-(citingPaper:ScientificPaper)
+WITH conference, scientificPaper, count(citingPaper) AS numberOfCitations
+ORDER BY conference, numberOfCitations DESC
+WITH conference, collect(scientificPaper) as allPapers, collect(numberOfCitations) as allCitations
+WITH conference, allPapers[0..3] as a, allCitations[0..3] as b
+UNWIND(range(0, 2)) as indexKey
+RETURN conference, a[indexKey], b[indexKey]
+````
+
+For each conference find its community: i.e., those authors that have published papers
+on that conference in, at least, 4 different editions.
+
+```
+MATCH (author:Author)--(scientificPaper:ScientificPaper)-[:IS_IN]->(:Proceeding)-[:OF_A]->(conference:Conference),(conference)-[:HAS]->(edition:Edition)
+WITH author, conference, count(edition) as appearance
+ORDER BY appearance DESC
+WHERE appearance > 4
+RETURN author, conference, appearance
+```
+
+Find the impact factors of the journals in your graph (see https://en.wikipedia.
+org/wiki/Impact_factor, for the definition of the impact factor).
+
+```
+MATCH (scientificPaper:ScientificPaper)-[:PUBLISHED_IN]->(journal:Journal)-[:BELONGS_TO]->(:Volume)-[:ISSUED]->(year:Year), (scientificPaper)<-[:CITES]-(citingPaper:ScientificPaper)
+WHERE year.year = "2018.0" OR year.year = "2019.0"
+WITH scientificPaper, journal, COUNT(citingPaper) as citations
+WITH count(scientificPaper) as totalPublications, journal, sum(citations) as totalCitations
+RETURN journal, toFloat(totalCitations / totalPublications)
+```

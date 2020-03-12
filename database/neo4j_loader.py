@@ -169,7 +169,7 @@ class Neo4JLoader(object):
             SET rev += {comment: row.comment, decision: row.decision, affiliation: row.affiliation, organization: row.organization}
             WITH author, rev, scientificPaper
             MATCH (author:Author)-[rev:REVIEWS]->(scientificPaper:ScientificPaper)-[:IS_IN|:PUBLISHED_IN]->(genericNode)
-            MERGE (revn:REVIEW {comment: rev.comment, decision: rev.decision})
+            MERGE (revn:Review {comment: rev.comment, decision: rev.decision})
             MERGE (author)-[:DOES]->(revn)
             MERGE (revn)-[:ON]->(scientificPaper)
             MERGE (revn)-[:FOR]->(genericNode)

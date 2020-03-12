@@ -1,13 +1,15 @@
 // possible solution for h-index
-MATCH (author:Author {name: 'Samir Mbarki'})-[:IS_LEAD_AUTHOR|:IS_CO_AUTHOR]->(scientificPaper:ScientificPaper)<-[:CITES] -(citatingPaper:ScientificPaper)
+MATCH (author:Author)-[:IS_LEAD_AUTHOR|:IS_CO_AUTHOR]->(scientificPaper:ScientificPaper)<-[:CITES]-(citatingPaper:ScientificPaper)
 WITH author, scientificPaper, count(citatingPaper) as numberOfCitations
-ORDER BY numberOfCitations DESC
+ORDER BY author, numberOfCitations DESC
 WITH author, collect(numberOfCitations) as orderedCitations
 UNWIND range(0, size(orderedCitations)-1) as arrayIndex
 WITH author, arrayIndex as key, orderedCitations[arrayIndex] as value
-WHERE key > value
-RETURN author, key - 1 as hIndex
-LIMIT 1
+WITH
+CASE
+WHEN key > value THEN key-1
+ELSE value END AS result, author
+RETURN author, min(result)
 
 // second query
 MATCH (scientificPaper:ScientificPaper)-[:IS_IN]->(:Proceeding)-[:OF_A]->(conference:Conference),
@@ -25,13 +27,6 @@ WITH author, conference, count(edition) as appearance
 ORDER BY appearance DESC
 WHERE appearance > 4
 RETURN author, conference, appearance
-
-
-LOAD CSV WITH HEADERS FROM 'file:///reviews.csv' AS row
-WITH row
-MATCH (author:Author {name: row.author})-[rev:REVIEWS]->(scientificPaper:ScientificPaper {key: row.paper})
-SET rev += {comment: row.comment, decision: row.decision, affiliation: row.affiliation, organization: row.organization}
-WITH author, rev, scientificPaper
 
 // query 4
 MATCH (scientificPaper:ScientificPaper)-[:PUBLISHED_IN]->(journal:Journal)-[:BELONGS_TO]->(:Volume)-[:ISSUED]->(year:Year), (scientificPaper)<-[:CITES]-(citingPaper:ScientificPaper)
