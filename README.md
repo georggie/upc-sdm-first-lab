@@ -48,7 +48,8 @@ your skills on modeling and instantiating graph data.
 
 The picture below represents the proposed solution for the domain 
 in the task. Two main criteria for deriving such a model are
-the optimization of queries in part B, and correct domain semantic modeling. 
+the optimization of queries in part B, and correct semantic modeling
+of a domain. 
 
 ![graph-model](https://i.imgur.com/MsvJhtT.png)
 
@@ -85,9 +86,23 @@ in a given city (venue) at a specific period of time of a given year. Oppositely
 not hold joint meeting events and, like a magazine, a journal publishes accepted papers in
 terms of volumes. There can be various volumes of a journal per year.
 
+From this description, we derived two paths for a scientific paper: 
 
+* `ScientificPaper` is PUBLISHED IN a `Journal` which BELONGS TO as 
+`Volume` which is further ISSUED in a certain `Year`.
 
+*  `ScientificPaper` IS IN a `Proceeding` OF A `Conference` | `Workshop` 
+that HAS `Edition` that HAPPENED in a certain `Year`.
 
+This modeling decision is pretty clear. It models all domain requirements 
+without extra overhead vertices or edges. 
+It is simple and extremely easy to understand.
+
+Because queries in B do not touch venues, and time period of a given year 
+when the conference|workshop was held we decided to put all edition 
+information like country, city, a period of the year in `Edition` vertex. 
+There will be repeated information such as country property, 
+but this does not cause much concern.
 
 ### A.2 Instantiating/Loading
 
