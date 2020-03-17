@@ -31,6 +31,7 @@ class Neo4JLoader(object):
         try:
             session = self._driver.session()
             session.run("""
+                USING PERIODIC COMMIT 500
                 LOAD CSV WITH HEADERS FROM 'file:///journals.csv' AS row
                 MERGE (paper:ScientificPaper {key: row.key, title: row.title, abstract: row.abstract, 
                        pages: coalesce(row.pages, 38-40), url: row.ee})
@@ -64,6 +65,7 @@ class Neo4JLoader(object):
             print('Loading conferences to neo4j ...')
             session = self._driver.session()
             session.run("""
+                USING PERIODIC COMMIT 500
                 LOAD CSV WITH HEADERS FROM 'file:///conferences.csv' AS row
                 MERGE (paper:ScientificPaper {id: row.key_x, title: row.title_x, abstract: row.abstract, 
                        pages: row.pages_x, url: row.ee_x})
@@ -93,6 +95,7 @@ class Neo4JLoader(object):
             session = self._driver.session()
 
             session.run("""
+                USING PERIODIC COMMIT 500
                 LOAD CSV WITH HEADERS FROM 'file:///conferences.csv' AS row
                 MERGE (paper:ScientificPaper {key: row.key_x, title: row.title_x, abstract: row.abstract, 
                        pages: row.pages_x, url: row.ee_x})
@@ -163,6 +166,7 @@ class Neo4JLoader(object):
         session = self._driver.session()
 
         session.run("""
+            USING PERIODIC COMMIT 500
             LOAD CSV WITH HEADERS FROM 'file:///reviews.csv' AS row
             WITH row
             MATCH (author:Author {name: row.author})-[rev:REVIEWS]->(scientificPaper:ScientificPaper {title: row.paper})

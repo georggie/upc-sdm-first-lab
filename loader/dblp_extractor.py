@@ -147,7 +147,7 @@ class DblpExtracor(object):
             confwork_papers = pd.DataFrame(columns=['author_x', 'title_x', 'pages_x', 'key_x', 'ee_x', 'editor', 'ee_y',
              'isbn', 'key_y', 'publisher', 'series', 'title_y', 'abstract', 'keywords', 'coauthors'])
 
-            for df in pd.read_csv(inproceedings_path, names=headers, delimiter=';', nrows=100000, low_memory=False,
+            for df in pd.read_csv(inproceedings_path, names=headers, delimiter=';', nrows=500000, low_memory=False,
                                   error_bad_lines=False, chunksize=20000):
 
                 if len(confwork_papers) > int(self._CONFERENCES_NUMBER):
