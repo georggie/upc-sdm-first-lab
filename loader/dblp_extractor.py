@@ -2,6 +2,7 @@ import os
 import re
 import nltk
 import lorem
+import random
 import settings
 import numpy as np
 import pandas as pd
@@ -31,24 +32,14 @@ class DblpExtracor(object):
         :return: string keywords
         """
         keywords = []
-        title = title.lower()
-
         blob = TextBlob(title)
+        db_keywords = ['data management', 'indexing', 'data modeling', 'big data',
+                       'data processing', 'data storage', 'data querying']
 
-        if 'data management' in title:
-            keywords.append('data management')
-        if 'indexing' in title:
-            keywords.append('indexing')
-        if 'data modeling' in title:
-            keywords.append('data modeling')
-        if 'big data' in title:
-            keywords.append('big data')
-        if 'data processing' in title:
-            keywords.append('data processing')
-        if 'data storage' in title:
-            keywords.append('data storage')
-        if 'data querying' in title:
-            keywords.append('data querying')
+        val = np.random.choice([1, 2], p=[0.20, 0.80])
+
+        if val == 1:
+            keywords += random.sample(db_keywords, random.randint(1, 3))
 
         keywords += blob.noun_phrases
         return '|'.join(keywords)
@@ -111,11 +102,14 @@ class DblpExtracor(object):
             print(f'Extracting journal papers from the {path}.csv ...')
 
             headers = self._extract_file_header(f'{path}_header')
-            special_papers = pd.DataFrame(columns=['author', 'title', 'pages', 'key', 'ee', 'journal', 'volume',
+            journal_papers = pd.DataFrame(columns=['author', 'title', 'pages', 'key', 'ee', 'journal', 'volume',
                                                    'year', 'abstract', 'keywords', 'coauthors'])
 
-            for df in pd.read_csv(path, names=headers, delimiter=';', nrows=200000, low_memory=False,
+            for df in pd.read_csv(path, names=headers, delimiter=';', nrows=100000, low_memory=False,
                                   error_bad_lines=False, chunksize=20000):
+
+                if len(journal_papers) > int(self._JOURNALS_NUMBER):
+                    break
 
                 # take only journals - documentation: key is the unique key of the record. `conf/*` is used for
                 # conference or workshop papers and `journals/*` is used for articles which are published in journals.
@@ -130,13 +124,10 @@ class DblpExtracor(object):
                 df['author'] = df.apply(lambda x: x['author'].split('|')[0], axis=1)
                 df['title'] = df.apply(lambda x: re.sub('[\\|"]', '', x['title']), axis=1)
 
-                special_papers = special_papers.append(df[df['title'].str.contains("data management|indexing|data modeling|big data"
-                                                              "|data processing|data storage|data querying", na=False)])
+                journal_papers = journal_papers.append(df)
 
-            df = df.sample(n=int(self._JOURNALS_NUMBER) - len(special_papers))
-            df = df.append(special_papers)
-
-            df.to_csv(f'{self._SOURCE_PATH}/journals.csv')
+            journal_papers = journal_papers.sample(n=int(self._JOURNALS_NUMBER))
+            journal_papers.to_csv(f'{self._SOURCE_PATH}/journals.csv')
         except IOError as io_error:
             print("Input/Output Exception => ", io_error)
 
@@ -153,11 +144,14 @@ class DblpExtracor(object):
             print(f'Extracting conference papers from the {inproceedings_path}.csv ...')
 
             headers = self._extract_file_header(f'{inproceedings_path}_header')
-            special_papers = pd.DataFrame(columns=['author_x', 'title_x', 'pages_x', 'key_x', 'ee_x', 'editor', 'ee_y',
+            confwork_papers = pd.DataFrame(columns=['author_x', 'title_x', 'pages_x', 'key_x', 'ee_x', 'editor', 'ee_y',
              'isbn', 'key_y', 'publisher', 'series', 'title_y', 'abstract', 'keywords', 'coauthors'])
 
-            for df in pd.read_csv(inproceedings_path, names=headers, delimiter=';', nrows=500000, low_memory=False,
-                                  error_bad_lines=False, chunksize=50000):
+            for df in pd.read_csv(inproceedings_path, names=headers, delimiter=';', nrows=100000, low_memory=False,
+                                  error_bad_lines=False, chunksize=20000):
+
+                if len(confwork_papers) > int(self._CONFERENCES_NUMBER):
+                    break
 
                 df = df.sample(frac=1).reset_index(drop=True)
                 df = df[df.key.str.contains('conf')]
@@ -172,10 +166,6 @@ class DblpExtracor(object):
                 final_df = final_df[['author_x', 'title_x', 'pages_x', 'key_x', 'ee_x', 'editor', 'ee_y', 'isbn', 'key_y',
                                      'publisher', 'series', 'title_y']]
 
-                special_papers = special_papers.append(final_df[final_df['title_x'].str.contains("data management|indexing"
-                                                                                                 "|data modeling|big data|data processing|"
-                                                                                                 "data storage|data querying", na=False)])
-
                 final_df.dropna(subset=['author_x', 'title_x', 'pages_x', 'key_x', 'ee_x', 'editor', 'ee_y',
                                         'isbn', 'key_y', 'publisher', 'series', 'title_y'], inplace=True)
 
@@ -186,17 +176,10 @@ class DblpExtracor(object):
                 final_df['author_x'] = final_df.apply(lambda x: x['author_x'].split('|')[0], axis=1)
                 final_df.dropna(subset=['title_y'], inplace=True)
 
-            special_papers.fillna("Unknown", inplace=True)
-            special_papers['abstract'] = special_papers.apply(lambda _: lorem.paragraph(), axis=1)
-            special_papers['keywords'] = special_papers.apply(lambda x: self._extract_keywords_from_sentence(x['title_x']), axis=1)
-            special_papers['title_y'] = special_papers.apply(lambda x: self._extract_conference_details(x['title_y']), axis=1)
-            special_papers['coauthors'] = special_papers.apply(lambda x: self._extract_coauthors(x['author_x']), axis=1)
-            special_papers['author_x'] = special_papers.apply(lambda x: x['author_x'].split('|')[0], axis=1)
+                confwork_papers = confwork_papers.append(final_df)
 
-            df = final_df.sample(n=int(self._CONFERENCES_NUMBER) - len(special_papers))
-            df = df.append(special_papers)
-
-            df.to_csv(f'{self._SOURCE_PATH}/conferences.csv')
+            confwork_papers = confwork_papers.sample(n=int(self._CONFERENCES_NUMBER))
+            confwork_papers.to_csv(f'{self._SOURCE_PATH}/conferences.csv')
         except IOError as io_error:
             print("Input/Output Exception => ", io_error)
 
@@ -226,6 +209,7 @@ class DblpExtracor(object):
             author_paper_pair[i].append(picked)
             author_paper_pair[i].append(choice)
 
-        df = pd.DataFrame(author_paper_pair,
-                          columns=['author', 'paper', 'comment', 'decision', 'affiliation', 'organization'])
+        df = pd.DataFrame(author_paper_pair, columns=['author', 'paper', 'comment',
+                                                      'decision', 'affiliation', 'organization'])
+
         df.to_csv(f'{self._SOURCE_PATH}/reviews.csv')
