@@ -157,7 +157,7 @@ class DblpExtracor(object):
              'isbn', 'key_y', 'publisher', 'series', 'title_y', 'abstract', 'keywords', 'coauthors'])
 
             for df in pd.read_csv(inproceedings_path, names=headers, delimiter=';', nrows=500000, low_memory=False,
-                                  error_bad_lines=False, chunksize=20000):
+                                  error_bad_lines=False, chunksize=50000):
 
                 df = df.sample(frac=1).reset_index(drop=True)
                 df = df[df.key.str.contains('conf')]

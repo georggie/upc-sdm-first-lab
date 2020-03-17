@@ -6,7 +6,7 @@ WHERE keyw.name = "data management" or keyw.name = "indexing" or keyw.name = "da
 RETURN count(DISTINCT author)
 
 // Database journals, conferences, workshops
-MATCH (scientificPaper:ScientificPaper)-[:IS_IN]->(:Proceeding)-[:OF_A]->(conference:Conference)
+call apoc.cypher.run('MATCH (scientificPaper:ScientificPaper)-[:IS_IN]->(:Proceeding)-[:OF_A]->(conference:Conference)
 WITH conference, COUNT(DISTINCT scientificPaper) AS totalPapers
 MATCH (keyw:Keyword)<-[:MENTIONES]-(scientificPaper:ScientificPaper)-[:IS_IN]->(:Proceeding)-[:OF_A]->(conference)
 WHERE keyw.name = "data management" or keyw.name = "indexing" or keyw.name = "data modeling" or keyw.name = "big data" or keyw.name = "data processing" or keyw.name = "data storage" or keyw.name = "data querying"
@@ -28,7 +28,11 @@ MATCH (keyw:Keyword)<-[:MENTIONES]-(scientificPaper:ScientificPaper)-[:PUBLISHED
 WHERE keyw.name = "data management" or keyw.name = "indexing" or keyw.name = "data modeling" or keyw.name = "big data" or keyw.name = "data processing" or keyw.name = "data storage" or keyw.name = "data querying"
 WITH journal, totalPapers, COUNT(DISTINCT scientificPaper) as databasePapers
 WHERE toFloat(databasePapers / totalPapers) > 0.9
-RETURN journal AS JournalWorkshopConference
+RETURN journal AS JournalWorkshopConference', {}) yield value
+WITH value.JournalWorkshopConference as Final
+MATCH (sp:ScientificPaper)--(Final)
+RETURN sp, Final
+ORDER BY Final
 
 // possible solution for h-index
 MATCH (author:Author)-[:IS_LEAD_AUTHOR|:IS_CO_AUTHOR]->(scientificPaper:ScientificPaper)<-[:CITES]-(citatingPaper:ScientificPaper)
