@@ -17,8 +17,8 @@ class Neo4JLoader(object):
         Load graph database extracted from the dblp.xml
         :return: void
         """
-        self._load_conferences_and_workshops()
         self._load_journals()
+        self._load_conferences_and_workshops()
         self._generate_random_citations()
         self._generate_random_reviewers()
 

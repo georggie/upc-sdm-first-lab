@@ -1,38 +1,53 @@
 D. Recommender
 
 // Helper query to find all authors that use mentioned keywords
-MATCH (author:Author)-[:IS_LEAD_AUTHOR|:IS_CO_AUTHOR]->(sp:ScientificPaper)-[:MENTIONES]->(keyw:Keyword)
+MATCH (sp:ScientificPaper)-[:MENTIONES]->(keyw:Keyword)
 WHERE keyw.name = "data management" or keyw.name = "indexing" or keyw.name = "data modeling" or keyw.name = "big data" or keyw.name = "data processing" or keyw.name = "data storage" or keyw.name = "data querying"
-RETURN count(DISTINCT author)
+SET sp.topic = "Databases"
 
 // Database journals, conferences, workshops
-call apoc.cypher.run('MATCH (scientificPaper:ScientificPaper)-[:IS_IN]->(:Proceeding)-[:OF_A]->(conference:Conference)
-WITH conference, COUNT(DISTINCT scientificPaper) AS totalPapers
-MATCH (keyw:Keyword)<-[:MENTIONES]-(scientificPaper:ScientificPaper)-[:IS_IN]->(:Proceeding)-[:OF_A]->(conference)
-WHERE keyw.name = "data management" or keyw.name = "indexing" or keyw.name = "data modeling" or keyw.name = "big data" or keyw.name = "data processing" or keyw.name = "data storage" or keyw.name = "data querying"
-WITH conference, totalPapers, COUNT(DISTINCT scientificPaper) as databasePapers
-WHERE toFloat(databasePapers / totalPapers) > 0.9
-RETURN conference AS JournalWorkshopConference
-UNION
-MATCH (scientificPaper:ScientificPaper)-[:IS_IN]->(:Proceeding)-[:OF_A]->(workshop:Workshop)
-WITH workshop, COUNT(DISTINCT scientificPaper) AS totalPapers
-MATCH (keyw:Keyword)<-[:MENTIONES]-(scientificPaper:ScientificPaper)-[:IS_IN]->(:Proceeding)-[:OF_A]->(workshop)
-WHERE keyw.name = "data management" or keyw.name = "indexing" or keyw.name = "data modeling" or keyw.name = "big data" or keyw.name = "data processing" or keyw.name = "data storage" or keyw.name = "data querying"
-WITH workshop, totalPapers, COUNT(DISTINCT scientificPaper) as databasePapers
-WHERE toFloat(databasePapers / totalPapers) > 0.9
-RETURN workshop AS JournalWorkshopConference
+call apoc.cypher.run('
+MATCH (scientificPaper:ScientificPaper)-[:IS_IN]->(proceeding:Proceeding)
+WITH proceeding, COUNT(DISTINCT scientificPaper) AS totalPapers
+MATCH (scientificPaper:ScientificPaper {topic: "Databases"})-[:IS_IN]->(proceeding)
+WITH proceeding, totalPapers, COUNT(DISTINCT scientificPaper) as databasePapers
+WHERE toFloat(databasePapers) / totalPapers > 0.9
+RETURN proceeding AS JournalWorkshopConference
 UNION
 MATCH (scientificPaper:ScientificPaper)-[:PUBLISHED_IN]->(journal:Journal)
 WITH journal, COUNT(DISTINCT scientificPaper) AS totalPapers
-MATCH (keyw:Keyword)<-[:MENTIONES]-(scientificPaper:ScientificPaper)-[:PUBLISHED_IN]->(journal:Journal)
-WHERE keyw.name = "data management" or keyw.name = "indexing" or keyw.name = "data modeling" or keyw.name = "big data" or keyw.name = "data processing" or keyw.name = "data storage" or keyw.name = "data querying"
+MATCH (scientificPaper:ScientificPaper {topic: "Databases"})-[:PUBLISHED_IN]->(journal)
 WITH journal, totalPapers, COUNT(DISTINCT scientificPaper) as databasePapers
-WHERE toFloat(databasePapers / totalPapers) > 0.9
+WHERE toFloat(databasePapers) / totalPapers > 0.09
 RETURN journal AS JournalWorkshopConference', {}) yield value
-WITH value.JournalWorkshopConference as Final
-MATCH (sp:ScientificPaper)--(Final)
-RETURN sp, Final
-ORDER BY Final
+WITH value.JournalWorkshopConference as jwc
+MATCH (sp:ScientificPaper)--(jwc)
+WITH DISTINCT jwc
+SET jwc.community = "Database"
+
+CALL algo.pageRank.stream('ScientificPaper', 'CITES', {iterations:20})
+YIELD nodeId, score
+CALL apoc.cypher.run('
+MATCH (scientificPaper:ScientificPaper {topic: "Databases"})-[:IS_IN]->(proceeding:Proceeding {community:"Database"})
+RETURN scientificPaper, proceeding as jwc
+UNION
+MATCH (scientificPaper:ScientificPaper {topic: "Databases"})-[:PUBLISHED_IN]->(journal:Journal {community: "Database"})
+RETURN scientificPaper, journal as jwc', {}) yield value
+WITH value.scientificPaper as paper, value.jwc as jwc, score
+WHERE id(paper) = nodeId
+WITH paper, jwc, score
+LIMIT 100
+RETURN paper
+
+// Gurus
+MATCH (author:Author)-[:IS_LEAD_AUTHOR|:IS_CO_AUTHOR]->(sp:ScientificPaper {Top100: "YES"})
+WITH author, COUNT(sp) as total
+WHERE total >=2
+RETURN author
+
+// Others
+MATCH (author:Author)-[:IS_LEAD_AUTHOR|:IS_CO_AUTHOR]->(sp:ScientificPaper {Top100: "YES"})
+RETURN DISTINCT author
 
 // possible solution for h-index
 MATCH (author:Author)-[:IS_LEAD_AUTHOR|:IS_CO_AUTHOR]->(scientificPaper:ScientificPaper)<-[:CITES]-(citatingPaper:ScientificPaper)
