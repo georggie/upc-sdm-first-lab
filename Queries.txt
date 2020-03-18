@@ -71,11 +71,13 @@
 		
 	D. Recommender 
 	D.1
+	    // Tag All Database Papers
 		MATCH (sp:ScientificPaper)-[:MENTIONES]->(keyw:Keyword)
 		WHERE keyw.name = "data management" or keyw.name = "indexing" or keyw.name = "data modeling" or keyw.name = "big data" or keyw.name = "data processing" or keyw.name = "data storage" or keyw.name = "data querying"
 		SET sp.topic = "Databases"
 		
 	D.2
+	    // Find Journals/Conferences/Workshops that are from database community
 		call apoc.cypher.run('
 		MATCH (scientificPaper:ScientificPaper)-[:IS_IN]->(proceeding:Proceeding)
 		WITH proceeding, COUNT(DISTINCT scientificPaper) AS totalPapers
@@ -88,14 +90,15 @@
 		WITH journal, COUNT(DISTINCT scientificPaper) AS totalPapers
 		MATCH (scientificPaper:ScientificPaper {topic: "Databases"})-[:PUBLISHED_IN]->(journal)
 		WITH journal, totalPapers, COUNT(DISTINCT scientificPaper) as databasePapers
-		WHERE toFloat(databasePapers) / totalPapers > 0.09
+		WHERE toFloat(databasePapers) / totalPapers > 0.9
 		RETURN journal AS JournalWorkshopConference', {}) yield value
 		WITH value.JournalWorkshopConference as jwc
 		MATCH (sp:ScientificPaper)--(jwc)
 		WITH DISTINCT jwc
 		SET jwc.community = "Database"
 		
-	D.3 
+	D.3
+	    // Take best 100 papers according to pageRank
 		CALL algo.pageRank.stream('ScientificPaper', 'CITES', {iterations:20})
 		YIELD nodeId, score
 		CALL apoc.cypher.run('
@@ -110,7 +113,8 @@
 		LIMIT 100
 		RETURN paper
 		
-	D.4 
+	D.4
+	    // Give Guru's and regular authors
 		MATCH (author:Author)-[:IS_LEAD_AUTHOR|:IS_CO_AUTHOR]->(sp:ScientificPaper {Top100: "YES"})
 		WITH author, COUNT(sp) as total
 		WHERE total >=2

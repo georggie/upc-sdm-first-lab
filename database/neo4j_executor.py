@@ -92,3 +92,70 @@ class Neo4JExecutor(object):
 
         for record in result:
             print(f"Journal => {record['journal']['name']}, ImpactFactor => {record['impactfactor']}")
+
+    def recommend(self):
+        """
+        Recommend authors for paper review
+        :return:
+        """
+
+        session = self._driver.session()
+
+        session.run("""
+                MATCH (sp:ScientificPaper)-[:MENTIONES]->(keyw:Keyword)
+                WHERE keyw.name = "data management" or keyw.name = "indexing" or keyw.name = "data modeling" or keyw.name = "big data" or keyw.name = "data processing" or keyw.name = "data storage" or keyw.name = "data querying"
+                SET sp.topic = "Databases"
+            """)
+
+        session.run("""
+            call apoc.cypher.run('
+            MATCH (scientificPaper:ScientificPaper)-[:IS_IN]->(proceeding:Proceeding)
+            WITH proceeding, COUNT(DISTINCT scientificPaper) AS totalPapers
+            MATCH (scientificPaper:ScientificPaper {topic: "Databases"})-[:IS_IN]->(proceeding)
+            WITH proceeding, totalPapers, COUNT(DISTINCT scientificPaper) as databasePapers
+            WHERE toFloat(databasePapers) / totalPapers > 0.9
+            RETURN proceeding AS JournalWorkshopConference
+            UNION
+            MATCH (scientificPaper:ScientificPaper)-[:PUBLISHED_IN]->(journal:Journal)
+            WITH journal, COUNT(DISTINCT scientificPaper) AS totalPapers
+            MATCH (scientificPaper:ScientificPaper {topic: "Databases"})-[:PUBLISHED_IN]->(journal)
+            WITH journal, totalPapers, COUNT(DISTINCT scientificPaper) as databasePapers
+            WHERE toFloat(databasePapers) / totalPapers > 0.9
+            RETURN journal AS JournalWorkshopConference', {}) yield value
+            WITH value.JournalWorkshopConference as jwc
+            MATCH (sp:ScientificPaper)--(jwc)
+            WITH DISTINCT jwc
+            SET jwc.community = "Database"
+        """)
+
+        session.run("""
+            CALL algo.pageRank.stream('ScientificPaper', 'CITES', {iterations:20})
+            YIELD nodeId, score
+            CALL apoc.cypher.run('
+            MATCH (scientificPaper:ScientificPaper {topic: "Databases"})-[:IS_IN]->(proceeding:Proceeding {community:"Database"})
+            RETURN scientificPaper, proceeding as jwc
+            UNION
+            MATCH (scientificPaper:ScientificPaper {topic: "Databases"})-[:PUBLISHED_IN]->(journal:Journal {community: "Database"})
+            RETURN scientificPaper, journal as jwc', {}) yield value
+            WITH value.scientificPaper as paper, value.jwc as jwc, score
+            WHERE id(paper) = nodeId
+            WITH paper, jwc, score
+            LIMIT 100
+            SET paper.Top100 = True
+        """)
+
+        result = session.run("""
+            MATCH (author:Author)-[:IS_LEAD_AUTHOR|:IS_CO_AUTHOR]->(sp:ScientificPaper {Top100: True})
+            WITH author, COUNT(sp) as total
+            WHERE total >=2
+            RETURN author
+            UNION
+            MATCH (author:Author)-[:IS_LEAD_AUTHOR|:IS_CO_AUTHOR]->(sp:ScientificPaper {Top100: True})
+            RETURN DISTINCT author
+        """)
+
+        for record in result:
+            print(f"Author => {record['author']['name']}")
+
+
+
