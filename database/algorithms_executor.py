@@ -16,27 +16,23 @@ class AlgorithmsExecutor(object):
 
     def run_louvain_algorithm(self):
         session = self._driver.session()
-        communities = set()
         dictionary = dict()
         results = session.run("""
                     CALL algo.beta.louvain.stream('ScientificPaper', 'CITES', {
                     graph: 'huge',
                     direction: 'BOTH',
-                    includeIntermediateCommunities: true
-                    }) YIELD nodeId, community, communities
-                    RETURN algo.asNode(nodeId).title as title, community
-                    ORDER BY community ASC
+                    }) 
+                    YIELD nodeId, community
+                    MATCH (n:ScientificPaper) WHERE id(n)=nodeId
+                    RETURN community,
+                    count(*) as communitySize, 
+                    collect(n.title) as members 
+                    order by communitySize desc limit 5
                      """)
         for item in results:
-            key = item['community']
-            value = item['title']
-            print("[%s, %s]" % (key, value))
-            communities.add(key)
-            if key in dictionary:
-                dictionary[key] += 1
-            else:
-                dictionary[key] = 1
-        print("Community Clusters %s" % dictionary)
+             print("\nCommunity Number %s   Community Size  %s   Community Members: \n" % (item['community'], item['communitySize']))
+             print (item['members'])
+
         return dictionary
 
     def run_page_rank_algorithm(self):
@@ -44,10 +40,11 @@ class AlgorithmsExecutor(object):
         scores = []
         results = session.run("""
                         CALL algo.pageRank.stream('ScientificPaper', 'CITES', {
-                        iterations:20
+                        iterations:20,
+                        direction:'INCOMING'
                         })
                         YIELD nodeId, score
-                        RETURN algo.asNode(nodeId).title  AS paper,score
+                        RETURN algo.asNode(nodeId).title  AS scientificPaper,score
                         ORDER BY score DESC LIMIT 10
                             """)
         print("Paper, Score")
