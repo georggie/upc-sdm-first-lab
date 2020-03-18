@@ -1,6 +1,6 @@
 # ignore venv and resources
 venv
-resources
+resources/output_*
 
 # ignore environment variables
 .env

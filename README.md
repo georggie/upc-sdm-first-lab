@@ -49,7 +49,7 @@ your skills on modeling and instantiating graph data.
 The picture below represents the proposed solution for the domain 
 in the task. Two main criteria for deriving such a model are
 the optimization of queries in part B, and correct semantic modeling
-of a domain. 
+of the domain. 
 
 ![graph-model](https://i.imgur.com/MsvJhtT.png)
 

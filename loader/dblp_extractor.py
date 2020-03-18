@@ -194,7 +194,7 @@ class DblpExtracor(object):
         author_paper_pair = neo4j.evolver_helper()
 
         faker = Faker()
-        universities = pd.read_csv('resources/universities', names=['Short', 'OName', 'URL'])
+        universities = pd.read_csv('resources/universities.csv', names=['Short', 'OName', 'URL'])
 
         for i in range(0, len(author_paper_pair)):
             choice = np.random.choice(['Company', 'University'], p=[0.3, 0.7])

@@ -1,0 +1,15 @@
+import os
+from database.neo4j_loader import Neo4JLoader
+from loader.dblp_extractor import DblpExtracor
+
+if __name__ == "__main__":
+    dblp_extr = DblpExtracor()
+    dblp_extr.genrate_random_reviews_()
+
+    try:
+        neo4j = Neo4JLoader()
+        neo4j.evolve()
+    except Exception as e:
+        print('Error has occured: ' + str(e))
+        print(f'Please make sure that you moved generated files from {os.getenv("DBLP_SOURCE")} directory to'
+              ' ${NEO4J_HOME}/import/ directory')

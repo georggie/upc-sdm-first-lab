@@ -158,7 +158,7 @@ class Neo4JLoader(object):
 
     def evolve(self):
         """
-
+        Evolving graph
         :return:
         """
         print('Evolving the graph ...')
@@ -179,6 +179,19 @@ class Neo4JLoader(object):
             MERGE (revn)-[:FOR]->(genericNode)
             MERGE (:Organization {name: rev.affiliation})<-[:AFFILIATION {type: rev.organization}]-(author)
             DELETE rev
+        """)
+
+        print('Declining papers that did not pass the revision ...')
+
+        session = self._driver.session()
+
+        session.run("""
+            MATCH (review:Review)-[:ON]->(sp:ScientificPaper)
+            WHERE review.decision = "True"
+            WITH COUNT(review) as numOfApproved, sp
+            WHERE numOfApproved < 2
+            MATCH (sp)-[isn:IS_IN|:PUBLISHED_IN]-()
+            DELETE isn
         """)
 
     def evolver_helper(self):
