@@ -1,0 +1,6 @@
+from database.neo4j_executor import Neo4JExecutor
+
+if __name__ == "__main__":
+    neo4j_exec = Neo4JExecutor()
+    # neo4j_exec.h_index()
+    neo4j_exec.top3_papers_of_each_conferences()
