@@ -185,12 +185,12 @@ WITH author, scientificPaper, count(citatingPaper) as numberOfCitations
 ORDER BY author, numberOfCitations DESC
 WITH author, collect(numberOfCitations) as orderedCitations
 UNWIND range(0, size(orderedCitations)-1) as arrayIndex
-WITH author, arrayIndex as key, orderedCitations[arrayIndex] as value
+WITH author, arrayIndex as key, orderedCitations[arrayIndex] as value, size(orderedCitations) as arrayLength
 WITH
 CASE
 WHEN key > value THEN key-1
-ELSE value END AS result, author
-RETURN author, min(result)
+ELSE arrayLength END AS result, author
+RETURN author, min(result) as hindex
 ```
 
 Find the top 3 most cited papers of each conference.
