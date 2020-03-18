@@ -9,10 +9,8 @@ class AlgorithmsExecutor(object):
         """
         Neo4jLoader constructor
         """
-        uri = "bolt://localhost:7687"
-        self._driver = GraphDatabase.driver(uri, auth=('neo4j', 'karim'), encrypted=False)
-        # self._driver = GraphDatabase.driver(os.getenv('DB_URI'),
-        #                                     auth=(os.getenv('DB_USER'), os.getenv('DB_PASSWORD')), encrypted=False)
+        self._driver = GraphDatabase.driver(os.getenv('DB_URI'),
+                                            auth=(os.getenv('DB_USER'), os.getenv('DB_PASSWORD')), encrypted=False)
 
     def run_louvain_algorithm(self):
         print("\nRUNNING LOUVAIN....")
