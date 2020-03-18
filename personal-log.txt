@@ -1,3 +1,27 @@
+B. PART
+// H - index query
+MATCH (author:Author)-[:IS_LEAD_AUTHOR|:IS_CO_AUTHOR]->(scientificPaper:ScientificPaper)<-[:CITES]-(citatingPaper:ScientificPaper)
+WITH author, scientificPaper, count(citatingPaper) as numberOfCitations
+ORDER BY author, numberOfCitations DESC
+WITH author, collect(numberOfCitations) as orderedCitations
+UNWIND range(0, size(orderedCitations)-1) as arrayIndex
+WITH author, arrayIndex as key, orderedCitations[arrayIndex] as value, size(orderedCitations) as arrayLength
+WITH
+CASE
+WHEN key > value THEN key-1
+ELSE arrayLength END AS result, author
+RETURN author, min(result) as hindex
+
+// Top 3 Papers in conference
+MATCH (scientificPaper:ScientificPaper)-[:IS_IN]->(:Proceeding)-[:OF_A]->(conference:Conference),
+(scientificPaper)<-[:CITES]-(citingPaper:ScientificPaper)
+WITH conference, scientificPaper, count(citingPaper) AS numberOfCitations
+ORDER BY conference, numberOfCitations DESC
+WITH conference, collect(scientificPaper) as allPapers, collect(numberOfCitations) as allCitations
+WITH conference, allPapers[0..3] as a, allCitations[0..3] as b
+UNWIND(range(0, 2)) as indexKey
+RETURN conference, a[indexKey] as paper, b[indexKey] as numOfCitations
+
 D. Recommender
 
 // Helper query to find all authors that use mentioned keywords
@@ -48,29 +72,6 @@ RETURN author
 // Others
 MATCH (author:Author)-[:IS_LEAD_AUTHOR|:IS_CO_AUTHOR]->(sp:ScientificPaper {Top100: "YES"})
 RETURN DISTINCT author
-
-// possible solution for h-index
-MATCH (author:Author)-[:IS_LEAD_AUTHOR|:IS_CO_AUTHOR]->(scientificPaper:ScientificPaper)<-[:CITES]-(citatingPaper:ScientificPaper)
-WITH author, scientificPaper, count(citatingPaper) as numberOfCitations
-ORDER BY author, numberOfCitations DESC
-WITH author, collect(numberOfCitations) as orderedCitations
-UNWIND range(0, size(orderedCitations)-1) as arrayIndex
-WITH author, arrayIndex as key, orderedCitations[arrayIndex] as value, size(orderedCitations) as arrayLength
-WITH
-CASE
-WHEN key > value THEN key-1
-ELSE arrayLength END AS result, author
-RETURN author, min(result)
-
-// second query
-MATCH (scientificPaper:ScientificPaper)-[:IS_IN]->(:Proceeding)-[:OF_A]->(conference:Conference),
-(scientificPaper)<-[:CITES]-(citingPaper:ScientificPaper)
-WITH conference, scientificPaper, count(citingPaper) AS numberOfCitations
-ORDER BY conference, numberOfCitations DESC
-WITH conference, collect(scientificPaper) as allPapers, collect(numberOfCitations) as allCitations
-WITH conference, allPapers[0..3] as a, allCitations[0..3] as b
-UNWIND(range(0, 2)) as indexKey
-RETURN conference, a[indexKey], b[indexKey]
 
 //third query
 MATCH (author:Author)--(scientificPaper:ScientificPaper)-[:IS_IN]->(:Proceeding)-[:OF_A]->(conference:Conference),(conference)-[:HAS]->(edition:Edition)
