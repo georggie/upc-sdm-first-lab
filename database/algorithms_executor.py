@@ -9,18 +9,19 @@ class AlgorithmsExecutor(object):
         """
         Neo4jLoader constructor
         """
-        # uri = "bolt://localhost:7687"
-        # self._driver = GraphDatabase.driver(uri, auth=('neo4j', 'karim'), encrypted=False)
-        self._driver = GraphDatabase.driver(os.getenv('DB_URI'),
-                                            auth=(os.getenv('DB_USER'), os.getenv('DB_PASSWORD')), encrypted=False)
+        uri = "bolt://localhost:7687"
+        self._driver = GraphDatabase.driver(uri, auth=('neo4j', 'karim'), encrypted=False)
+        # self._driver = GraphDatabase.driver(os.getenv('DB_URI'),
+        #                                     auth=(os.getenv('DB_USER'), os.getenv('DB_PASSWORD')), encrypted=False)
 
     def run_louvain_algorithm(self):
+        print("\nRUNNING LOUVAIN....")
         session = self._driver.session()
         dictionary = dict()
         results = session.run("""
                     CALL algo.beta.louvain.stream('ScientificPaper', 'CITES', {
                     graph: 'huge',
-                    direction: 'BOTH',
+                    direction: 'BOTH'
                     }) 
                     YIELD nodeId, community
                     MATCH (n:ScientificPaper) WHERE id(n)=nodeId
@@ -36,6 +37,7 @@ class AlgorithmsExecutor(object):
         return dictionary
 
     def run_page_rank_algorithm(self):
+        print("RUNNING PAGERANK....")
         session = self._driver.session()
         scores = []
         results = session.run("""
@@ -47,9 +49,9 @@ class AlgorithmsExecutor(object):
                         RETURN algo.asNode(nodeId).title  AS scientificPaper,score
                         ORDER BY score DESC LIMIT 10
                             """)
-        print("Paper, Score")
+        print("[Paper, \t\t\t\t\tScore]")
         for item in results:
-            paper = item['paper']
+            paper = item['scientificPaper']
             score = item['score']
             print("[%s, %s]" % (paper, score))
             scores.append((paper, score))
