@@ -56,3 +56,39 @@ class Neo4JExecutor(object):
 
         for record in result:
             print(f"Conference => {record['conference']['name']}, Paper => {record['paper']['title']}, Citations => {record['numOfCitations']}")
+
+    def conference_community(self):
+        """
+        Finds community of each conference
+        :return:
+        """
+        session = self._driver.session()
+
+        result = session.run("""
+                MATCH (author:Author)--(scientificPaper:ScientificPaper)-[:IS_IN]->(:Proceeding)-[:OF_A]->(conference:Conference),(conference)-[:HAS]->(edition:Edition)
+                WITH author, conference, count(edition) as appearance
+                ORDER BY appearance DESC
+                WHERE appearance > 4
+                RETURN author, conference, appearance
+            """)
+
+        for record in result:
+            print(f"Author => {record['author']['name']}, Conference => {record['conference']['name']}, Appearance => {record['appearance']}")
+
+    def journal_impact_factor(self):
+        """
+        Finds journal impact factor
+        :return:
+        """
+        session = self._driver.session()
+
+        result = session.run("""
+                MATCH (scientificPaper:ScientificPaper)-[:PUBLISHED_IN]->(journal:Journal)-[:BELONGS_TO]->(:Volume)-[:ISSUED]->(year:Year), (scientificPaper)<-[:CITES]-(citingPaper:ScientificPaper)
+                WHERE year.year = "2018.0" OR year.year = "2019.0"
+                WITH scientificPaper, journal, COUNT(citingPaper) as citations
+                WITH count(scientificPaper) as totalPublications, journal, sum(citations) as totalCitations
+                RETURN journal, toFloat(totalCitations / totalPublications) as impactfactor
+            """)
+
+        for record in result:
+            print(f"Journal => {record['journal']['name']}, ImpactFactor => {record['impactfactor']}")
